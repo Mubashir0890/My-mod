@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ILOVALAR</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@800&family=Onest:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E0F14;--card:#171923;--line:#2A2E3D;--text:#F2F3F7;--mut:#9AA1B5;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.45 "Onest",system-ui,sans-serif;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 8px}
+h1{margin:0;font:800 28px/1 "Unbounded","Onest",sans-serif;letter-spacing:.02em}
+h2{margin:0 0 10px;font:600 17px/1.3 "Onest",sans-serif}
+#gear{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:20px;cursor:pointer}
+.msg{color:var(--mut);margin:12px 0}
+.rb{background:var(--b,#FF4D6D);color:var(--f,#1B0710);transition:background-color 1.6s linear,color 1.6s linear}
+button.rb{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;min-height:64px;margin:10px 0;padding:0 20px;border:0;border-radius:18px;font:600 18px/1.25 "Onest",sans-serif;text-align:left;cursor:pointer;touch-action:manipulation}
+button.rb:active{transform:scale(.985)}
+.ar{font-size:28px;line-height:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}
+input,select{width:100%;height:46px;margin:0 0 8px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#0E0F14;color:var(--text);font:500 16px "Onest",sans-serif}
+button.btn{width:100%;height:48px;border:0;border-radius:12px;font:600 16px "Onest",sans-serif;cursor:pointer}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.del{flex:none;height:36px;padding:0 12px;border-radius:10px;border:1px solid #6B2B35;background:transparent;color:#FF8A96;font:500 14px "Onest",sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.rb{transition:none}button.rb:active{transform:none}}
+</style>
+</head>
+<body>
+<header><h1>ILOVALAR</h1><button id="gear" hidden aria-label="Admin panel">⚙</button></header>
+<main id="main"><p class="msg">Yuklanmoqda…</p></main>
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor("#0E0F14"); tg.setBackgroundColor("#0E0F14"); } catch (e) {} }
+const $ = id => document.getElementById(id);
+const H = { "X-Init-Data": tg ? tg.initData : "", "Content-Type": "application/json" };
+// 15 xil rang: [fon, yozuv]
+const PAL = [["#FF4D6D","#1B0710"],["#FF8A3D","#1E0F02"],["#FFC93C","#231A00"],["#C6F432","#162000"],["#3DDC84","#04210F"],
+  ["#14D9B5","#032320"],["#22C7F2","#021F29"],["#3D8BFF","#030F2B"],["#6C5CE7","#F4F1FF"],["#B15CFF","#16042A"],
+  ["#F25CE6","#2B0627"],["#FF5CA8","#2B0415"],["#E8E8F0","#13131A"],["#1F2A44","#7FE3FF"],["#3A1F44","#FFD36B"]];
+let tick = 0, S = null, adminOpen = false;
+
+async function api(p, m = "GET", b) {
+  const r = await fetch(p, { method: m, headers: H, body: b ? JSON.stringify(b) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Xatolik yuz berdi");
+  return j;
+}
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function openLink(u) {
+  if (tg) { /^https:\/\/t\.me\//.test(u) ? tg.openTelegramLink(u) : tg.openLink(u); } else window.open(u, "_blank");
+}
+function colors() {
+  document.querySelectorAll(".rb").forEach((e, i) => { const c = PAL[(i + tick) % PAL.length]; e.style.setProperty("--b", c[0]); e.style.setProperty("--f", c[1]); });
+}
+function big(text, fn) { const b = el("button", "rb"); b.append(el("span", "", text), el("span", "ar", "›")); b.onclick = fn; return b; }
+function small(text, fn) { const b = el("button", "btn rb", text); b.onclick = fn; return b; }
+function inp(ph) { const i = el("input"); i.placeholder = ph; i.autocomplete = "off"; i.setAttribute("aria-label", ph); return i; }
+function row(t, del) {
+  const r = el("div", "row"); r.append(el("span", "", t));
+  const b = el("button", "del", "Oʻchirish"); b.onclick = () => { if (confirm("Oʻchirilsinmi?")) del(); }; r.append(b); return r;
+}
+async function act(f) { try { await f(); await load(); } catch (e) { alert(e.message); } }
+
+async function load() {
+  try { S = await api("/api/state"); render(); }
+  catch (e) { $("main").replaceChildren(el("p", "msg", "Ulanishda xato. Qayta urinib koʻring.")); }
+}
+
+function render() {
+  const m = $("main"); m.replaceChildren(); $("gear").hidden = !S.admin;
+  if (!S.ok) { m.append(el("p", "msg", "Ilovani Telegram bot orqali oching.")); return; }
+  if (adminOpen && S.admin) { renderAdmin(m); colors(); return; }
+  if (S.missing.length) {
+    m.append(el("p", "msg", "Davom etish uchun quyidagi kanallarga obuna boʻling, keyin «Tekshirish» tugmasini bosing."));
+    S.missing.forEach(c => m.append(big("📢 " + c.title, () => openLink(c.link))));
+    m.append(big("✅ Tekshirish", load));
+  } else if (!S.apps.length) m.append(el("p", "msg", "Hozircha ilovalar yoʻq."));
+  else S.apps.forEach(a => m.append(big(a.name, () => openLink(a.url))));
+  colors();
+}
+
+function renderAdmin(m) {
+  m.append(el("p", "msg", "Foydalanuvchilar: " + S.users));
+  const c1 = el("section", "card"); c1.append(el("h2", "", "Ilova qoʻshish"));
+  const n = inp("Nom (masalan: Video montaj)"), u = inp("Havola: https://t.me/kanal/123");
+  c1.append(n, u, small("Qoʻshish", () => act(() => api("/api/admin/app", "POST", { name: n.value, url: u.value }))));
+  S.apps.forEach(a => c1.append(row(a.name, () => act(() => api("/api/admin/app/" + a.id, "DELETE")))));
+  const c2 = el("section", "card"); c2.append(el("h2", "", "Majburiy obuna kanallari"));
+  const ch = inp("Kanal: @username yoki -100… ID");
+  const md = el("select"); md.setAttribute("aria-label", "Rejim");
+  [["open", "Oddiy obuna"], ["request", "Soʻrov bilan qoʻshilish"]].forEach(o => { const op = el("option", "", o[1]); op.value = o[0]; md.append(op); });
+  c2.append(ch, md, small("Kanal qoʻshish", () => act(() => api("/api/admin/channel", "POST", { chat: ch.value, mode: md.value }))));
+  S.channels.forEach(c => c2.append(row(c.title + (c.mode === "request" ? " (soʻrov)" : ""), () => act(() => api("/api/admin/channel/" + c.id, "DELETE")))));
+  m.append(c1, c2);
+}
+
+$("gear").onclick = () => { adminOpen = !adminOpen; render(); };
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { tick++; colors(); }, 3000);
+load();
+</script>
+</body>
+</html>
